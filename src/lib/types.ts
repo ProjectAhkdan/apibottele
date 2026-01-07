@@ -28,6 +28,24 @@ export interface OrderRow {
   created_at: string
 }
 
+export interface GameRow {
+  id: string
+  code: string
+  name: string
+  is_active: boolean
+  created_at: string
+}
+
+export interface PricelistRow {
+  id: string
+  game_id: string
+  item_name: string
+  nominal: number
+  price: number
+  is_active: boolean
+  created_at: string
+}
+
 export interface TelegramUpdate {
   update_id: number
   message?: {
