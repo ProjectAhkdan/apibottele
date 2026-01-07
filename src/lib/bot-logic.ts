@@ -1,6 +1,7 @@
 import { supabaseAdmin } from './supabase'
 import { sendMessage, editMessageText, answerCallbackQuery, KEYBOARDS } from './telegram'
 import { BotState, TelegramUpdate } from './types'
+import { getActiveGames, getPricelistByGame } from './pricelists'
 
 export async function processUpdate(update: TelegramUpdate) {
   // 1. Extract Info
@@ -48,6 +49,47 @@ export async function processUpdate(update: TelegramUpdate) {
           await updateState(fromId, 'select_game', {})
           await editMessageText(chatId, callback!.message.message_id, '🎮 Pilih Game:', KEYBOARDS.games)
           await answerCallbackQuery(callback!.id)
+        } else if (data === 'menu_pricelist') {
+           const games = await getActiveGames()
+           if (games.length === 0) {
+             await answerCallbackQuery(callback!.id, 'Belum ada game yang tersedia.')
+             return
+           }
+           const keyboard = {
+               inline_keyboard: [
+                   ...games.map(g => [{ text: g.name, callback_data: `pricelist_game_${g.code}` }]),
+                   [{ text: '🔙 Kembali', callback_data: 'menu_main' }]
+               ]
+           }
+           await editMessageText(chatId, callback!.message.message_id, '📋 <b>Pricelist Game</b>\nSilahkan pilih game untuk melihat harga:', keyboard)
+           await answerCallbackQuery(callback!.id)
+        } else if (data?.startsWith('pricelist_game_')) {
+           const gameCode = data.replace('pricelist_game_', '')
+           const items = await getPricelistByGame(gameCode)
+           
+           if (items.length === 0) {
+             await answerCallbackQuery(callback!.id, 'Belum ada pricelist untuk game ini.')
+             return
+           }
+
+           // Format: • 86 Diamond  — Rp20.000
+           let msg = `📋 <b>PRICELIST - ${gameCode}</b>\n\n`
+           items.forEach(item => {
+             msg += `• ${item.item_name.padEnd(15)} — Rp${item.price.toLocaleString('id-ID')}\n`
+           })
+           msg += `\n<i>*Harga dapat berubah sewaktu-waktu</i>`
+
+           // Back button to Pricelist Menu (need to re-fetch games or just Main Menu? User flow usually allows back to list)
+           // For simplicity, Back to Main Menu or Back to Game List. 
+           // Let's provide Back to Main Menu for now as constructing Game List again requires fetching.
+           // Better: Add "Back to Games" button which triggers `menu_pricelist`.
+           
+           const keyboard = {
+             inline_keyboard: [[{ text: '🔙 Kembali ke Menu', callback_data: 'menu_main' }]] // Or menu_pricelist
+           }
+
+           await editMessageText(chatId, callback!.message.message_id, msg, keyboard)
+           await answerCallbackQuery(callback!.id)
         } else if (data === 'menu_status') {
            // Check orders logic
            await answerCallbackQuery(callback!.id, 'Fitur Cek Status belum diaktifkan.')

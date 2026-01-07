@@ -45,6 +45,7 @@ export const KEYBOARDS = {
   mainMenu: {
     inline_keyboard: [
       [{ text: '🎮 Top Up Game', callback_data: 'menu_topup' }],
+      [{ text: '📋 Pricelist', callback_data: 'menu_pricelist' }],
       [{ text: '📦 Cek Status Pesanan', callback_data: 'menu_status' }],
       [{ text: '❓ Bantuan', callback_data: 'menu_help' }],
     ],
